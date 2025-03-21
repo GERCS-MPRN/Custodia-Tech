@@ -1,0 +1,119 @@
+/* Google Font */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Roboto', sans-serif;
+}
+body {
+    display: flex;
+    flex-direction: column; /* Organiza os elementos filhos em coluna */
+    min-height: 100vh; /* Altura mínima igual à altura total da viewport */
+}
+.content {
+    flex: 1; /* Faz o conteúdo crescer para ocupar o espaço restante */
+    padding: 10px; /* Adicione padding opcional */
+}
+.banner {
+    background-color: #8b0000;
+    color: #fff; /* White text */
+    padding: 20px;
+    text-align: center;
+    line-height: 1.2; /* Reduced line spacing */
+}
+.banner-images {
+    display: flex;
+    justify-content: center; /* Center the images horizontally */
+    align-items: center; /* Align the images vertically */
+    gap: 20px; /* Space between images */
+    margin-bottom: 20px; /* Space between images and text */
+}
+.banner-images img {
+    height: 100px; /* Ensure both images have the same height */
+    width: auto; /* Maintain aspect ratio */
+}
+.imagem-arredondada {
+    width: 20%; /* Ajuste o tamanho conforme necessário */
+    height: auto; /* Mantém a proporção da imagem */
+    border-radius: 15px; /* Controla o arredondamento dos cantos */
+    border: 2px solid #ccc; /* Opcional: adiciona uma borda */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Opcional: adiciona sombra */
+}
+.main-content {
+    background-color: #fff; /* White background */
+    color: #6d0303; /* Same color as menu text */
+    padding: 20px;
+    min-height: 300px; /* Optional: Minimum height for the content area */
+    text-align: center; /* Center align content */
+}
+form {
+    width: 50%;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #6d0303;
+    text-align: left;
+}
+#mensagens h2.mensagem_erro {
+    color: #c50404 !important;
+}
+#mensagens h2.mensagem_sucesso {
+    color: #0738d6 !important;
+}
+#mensagens img.imagem-mensagem {
+    width: 5% !important; /* Garante prioridade */
+    height: auto; /* Mantém a proporção da imagem */
+    border-radius: 15px; /* Controla o arredondamento dos cantos */
+    border: 2px solid #ccc; /* Opcional: adiciona uma borda */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Opcional: adiciona sombra */
+}
+input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+.form-buttons {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+.form-buttons button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+.form-buttons .vermelho {
+    background-color: #8b0000;
+    color: #fff;
+    margin: 5px;
+}
+.form-buttons .vermelho:hover {
+    background-color: #c50404;
+}
+.form-buttons .cinza {
+    background-color: #ccc;
+    color: #000;
+    margin: 5px;
+}
+.form-buttons .cinza:hover {
+    background-color: #aaa8a8;
+}
+footer {
+    text-align: center; /* Centraliza o texto */
+    padding: 10px 0; /* Espaçamento interno */
+    font-size: 14px; /* Tamanho da fonte */
+    width: 100%; /* Garante que ocupe toda a largura */
+    color: #6d0303;
+}

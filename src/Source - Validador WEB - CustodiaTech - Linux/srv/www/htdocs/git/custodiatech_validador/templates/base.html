@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CUSTODIATECH – GERCS</title>
+    <!-- Link to the icon -->
+    <link rel="icon" href="static/favicon.ico" type="image/png">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    
+    <div class="content">
+    
+        <!-- Banner Section -->
+        <div class="banner">
+            <!-- Images side by side -->
+            <div class="banner-images">
+                <img src="static/custodia_tech_logo.jpg" alt="CustodiaTech Logo" class="imagem-arredondada">
+                <img src="static/mprn_logo.jpg" alt="MPRN Logo" class="imagem-arredondada">
+            </div>
+            <!-- Text Content -->
+            <div class="banner-content">
+                <h1>CUSTODIATECH</h1>
+                <h2>Registro Qualificado de Vestígio Digital</h2>
+                <h4>Grupo de Atuação Especial de Combate ao Crime Organizado – GAECO</h4>
+                <h4>Gerência de Ciências Cibernéticas e Sinais – GERCS</h4>
+            </div>
+        </div>
+
+        <main>
+            {% block content %}
+            <p>Conteúdo padrão. Substitua isso nas páginas filhas.</p>
+            {% endblock %}
+        </main>
+    </div>
+    
+    <footer>
+        <p><i>&copy; 2025 CUSTODIATECH. Ministério Público do Rio Grande do Norte. Todos os direitos reservados.</i></p>
+	</footer>
+
+</body>
+</html>

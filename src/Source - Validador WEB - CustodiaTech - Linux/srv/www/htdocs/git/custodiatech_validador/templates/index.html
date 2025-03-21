@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="main-content" align="center">
+    <h3>Módulo de Verificação de Integridade e Autenticidade de Relatórios do CustodiaTech</h3>
+    <br>
+    <form action="/" method="POST" enctype="multipart/form-data">
+        <!-- Relatório (PDF Upload) -->
+        <label for="relatorio">Anexe o Relatório para Validação (PDF - Máx. 150 MB):</label>
+        <input type="file" id="relatorio" name="relatorio" accept="application/pdf">
+        
+        <!-- Captcha -->
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+        <br>
+        <br>
+	<div class="cf-turnstile" data-sitekey="{{ sitekey }}"></div>
+        <!-- Botões -->
+        <div class="form-buttons">
+            <button type="submit" class="vermelho">Submeter</button>
+            <button type="reset" class="cinza" onclick="limparMensagens()">Limpar</button>
+        </div>
+    </form>
+    <br>
+    <div id="mensagens">
+		<!-- Exibição de mensagens de erro/sucesso -->
+		{% with messages = get_flashed_messages() %}
+			{% if messages %}
+				{% for message in messages %}
+					{% if message == "O relatório submetido é íntegro e autêntico!" %}
+						<h2 class="mensagem_sucesso">{{ message }}</h2>
+						<br>
+						<img src="{{ url_for('static', filename='sucesso.png') }}" alt="sucesso" class="imagem-mensagem">
+					{% else %}
+						<h2 class="mensagem_erro">{{ message }}</h2>
+						<br>
+						<img src="{{ url_for('static', filename='erro.png') }}" alt="erro" class="imagem-mensagem">
+					{% endif %}
+				{% endfor %}
+			{% endif %}
+		{% endwith %}
+	</div>
+</div>
+
+<script>
+    // Função para limpar mensagens
+    function limparMensagens() {
+        const mensagens = document.getElementById("mensagens");
+        if (mensagens) {
+            mensagens.innerHTML = ""; // Remove todas as mensagens
+        }
+    }
+</script>
+
+{% endblock %}

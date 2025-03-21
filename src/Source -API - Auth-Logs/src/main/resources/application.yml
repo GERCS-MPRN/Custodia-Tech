@@ -1,0 +1,71 @@
+server:
+  port: ${PORTA_APP:80}
+  http2:
+    enabled: true
+  servlet:
+    context-path: /custodiatech-api
+spring:
+  main:
+    banner-mode: off
+  application:
+    name: custodiatech-api
+  datasource:
+    primary:
+      driverClassName: com.microsoft.sqlserver.jdbc.SQLServerDriver
+      jdbcUrl: jdbc:${DB_AUTH_SGDB}://${DB_AUTH_SERVER}:${DB_AUTH_PORT};databaseName=${DB_AUTH_NAME};encrypt=${ENCRYPT};trustServerCertificate=${TRUST_SERVER_CERTIFICATE}
+      url: jdbc:${DB_AUTH_SGDB}://${DB_AUTH_SERVER}:${DB_AUTH_PORT};databaseName=${DB_AUTH_NAME};encrypt=${ENCRYPT};trustServerCertificate=${TRUST_SERVER_CERTIFICATE}
+      username: ${DB_AUTH_USERNAME}
+      password: ${DB_AUTH_PASSWORD}
+    secondary:
+      driverClassName: com.microsoft.sqlserver.jdbc.SQLServerDriver
+      jdbcUrl: jdbc:${DB_AUDIT_SGDB}://${DB_AUDIT_SERVER}:${DB_AUDIT_PORT};databaseName=${DB_AUDIT_NAME};encrypt=${ENCRYPT};trustServerCertificate=${TRUST_SERVER_CERTIFICATE}
+      url: jdbc:${DB_AUDIT_SGDB}://${DB_AUDIT_SERVER}:${DB_AUDIT_PORT};databaseName=${DB_AUDIT_NAME};encrypt=${ENCRYPT};trustServerCertificate=${TRUST_SERVER_CERTIFICATE}
+      username: ${DB_AUDIT_USERNAME}
+      password: ${DB_AUDIT_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: none
+      naming:
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.SQLServer2012Dialect
+    show-sql: false
+  mvc:
+    pathmatch:
+      matching-strategy: ANT_PATH_MATCHER
+  threads:
+    virtual:
+      enabled: true
+logging:
+  file:
+    name: ${LOG_PATH_FILE}-${random.uuid}.log
+  level:
+    root: ${LOG_LEVEL_ROOT:error}
+    web: ${LOG_LEVEL_WEB:error}
+    sql: ${LOG_LEVEL_SQL:error}
+custodiatech-api:
+  version-app: ${VERSION_APP}
+  link-download: ${LINK_DOWNLOAD}
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-time: ${JWT_EXPIRATION_TIME}
+  grupoAcesso: ${GRUPO_ACESSO}
+
+management:
+  endpoints:
+    enabled-by-default: false
+    web:
+      exposure:
+        include: prometheus, health
+  endpoint:
+    health:
+      enabled: true
+      show-details: always
+      probes:
+        enabled: true
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
