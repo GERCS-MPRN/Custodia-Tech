@@ -1,0 +1,48 @@
+<html>
+<head>
+<style>
+.blink {
+  animation: blink 1s steps(1, end) infinite;
+}
+
+@keyframes blink {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+h1 {
+    color:red;
+    font-size: 30px;
+    font-family: "Open Sans Condensed", sans-serif;
+    text-align: center;
+    margin-top: 30px;
+}
+
+h5 {
+    color:black;
+    font-size: 10px;
+    font-family: "Open Sans Condensed", sans-serif;
+    text-align: center;
+    margin-top: 10px;
+    font-weight: bold;
+}
+</style>
+<link rel="icon" type="image/png" href="../imagens/iconecustodiatech.ico">
+<link rel="stylesheet" href="custodiatech_nprogress.css">
+<script src="custodiatech_nprogress.js"></script>
+<title> Progresso da Captura</title>
+</head>
+<body>
+<h1 class="blink">Aguarde a finaliza&ccedil;&atilde;o do processo de captura din&acirc;mica de p&aacute;gina(s)...</h1>
+<img src="../../imagens/custodia_tech.png" style="display: block; margin: auto; width: 328px; height: 89px;"></img>
+<input type="button" id="invisibleButtonInc" style="display: none;" onclick="NProgress.inc();">
+<h5>GER&Ecirc;NCIA DE CI&Ecirc;NCIAS CIBERN&Eacute;TICAS E SINAIS – GERCS</h5>
+</body>
+</html>

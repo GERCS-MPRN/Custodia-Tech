@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CustodiaTech</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <img src="../../imagens/custodia_tech.png" alt="Custodia Tech" id="logoImage">
+        <h1>Gravação de Tela - CustodiaTech</h1>
+        <button id="startBtn" class="btn-green">Iniciar</button>
+        <button id="stopBtn" class="btn-disabled" disabled>Parar</button>
+        <!-- Mensagem de gravação -->
+        <p id="recordingMessage">Gravando a tela...</p>
+        <!-- Contêiner para vídeos gravados -->
+        <div id="recordingsContainer"></div>
+    </div>
+
+    <script>
+
+        let mediaRecorder;
+        let recordedChunks = [];
+        let currentStream; // Variável para armazenar o stream atual
+        let blinkInterval; // Variável para controlar o efeito de piscar da mensagem
+
+        function getFileName() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            return `CustodiaTech_Gravação_${year}-${month}-${day}_${hours}-${minutes}-${seconds}.webm`;
+        }
+
+        document.getElementById('startBtn').addEventListener('click', async () => {
+            try {
+
+                recordedChunks = [];
+                currentStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: {
+                        displaySurface: "monitor"
+                    },
+                    audio: true
+                });
+
+                mediaRecorder = new MediaRecorder(currentStream);
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = getFileName();
+                    a.style.display = 'none';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+
+                    const recordingsContainer = document.getElementById('recordingsContainer');
+                    const video = document.createElement('video');
+                    video.src = url;
+                    video.controls = true;
+                    video.className = 'recordedVideo';
+
+                    recordingsContainer.appendChild(video);
+
+                    // Atualizar botões
+                    const startBtn = document.getElementById('startBtn');
+                    const stopBtn = document.getElementById('stopBtn');
+
+                    startBtn.disabled = false;
+                    startBtn.classList.remove('btn-disabled');
+                    startBtn.classList.add('btn-green');
+
+                    stopBtn.disabled = true;
+                    stopBtn.classList.remove('btn-red');
+                    stopBtn.classList.add('btn-disabled');
+
+                    // Parar o efeito de piscar e esconder a mensagem
+                    clearInterval(blinkInterval);
+                    recordingMessage.style.display = 'none';
+
+                };
+
+                mediaRecorder.start();
+                
+                // Atualizar botões
+                const startBtn = document.getElementById('startBtn');
+                const stopBtn = document.getElementById('stopBtn');
+
+                startBtn.disabled = true;
+                startBtn.classList.remove('btn-green');
+                startBtn.classList.add('btn-disabled');
+
+                stopBtn.disabled = false;
+                stopBtn.classList.remove('btn-disabled');
+                stopBtn.classList.add('btn-red');
+
+                // Exibir mensagem "Gravando tela..." piscando
+                recordingMessage.style.display = 'block';
+                blinkInterval = setInterval(() => {
+                    recordingMessage.style.visibility = (recordingMessage.style.visibility === 'hidden') ? 'visible' : 'hidden';
+                }, 750); // Alterna visibilidade a cada 750ms
+            
+            } catch (err) {
+                console.error('Error accessing display media.', err);
+                alert('Failed to start recording: ' + err.message);
+            }
+        });
+
+        document.getElementById('stopBtn').addEventListener('click', () => {
+            mediaRecorder.stop();
+            // Para todos os tracks do stream para fechar o popup
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+            
+            // Atualizar botões
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+
+            startBtn.disabled = false;
+            startBtn.classList.remove('btn-disabled');
+            startBtn.classList.add('btn-green');
+
+            stopBtn.disabled = true;
+            stopBtn.classList.remove('btn-red');
+            stopBtn.classList.add('btn-disabled');
+
+            // Parar o efeito de piscar e esconder a mensagem
+            clearInterval(blinkInterval);
+            recordingMessage.style.display = 'none';
+        
+        });
+    </script>
+</body>
+</html>
