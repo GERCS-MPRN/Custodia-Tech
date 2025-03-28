@@ -23,6 +23,7 @@ from PIL import Image as PILImage
 from PIL import ImageGrab, ImageTk
 from PIL.ExifTags import TAGS
 from PyPDF2 import PdfReader, PdfWriter
+import pytz
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -31,6 +32,7 @@ from reportlab.platypus import Image as RLImage
 from reportlab.platypus import (PageBreak, PageTemplate, Paragraph,
                                 SimpleDocTemplate, Spacer, Table, TableStyle)
 from ttkbootstrap import Style
+from tzlocal import get_localzone
 
 import utils.api_perdigueiro as api_perdigueiro
 from modulos.captura_paginas.interface_captura_paginas import \
@@ -70,7 +72,7 @@ global usuario
 global l_sessao
 
 # Número da versão do programa - Alterar sempre que for compilar uma nova versão para produção
-versao_atual = "1.5"
+versao_atual = "1.6"
 icone_custodia = 'imagens\\iconecustodiatech.ico'
 stop_monitoring = False
 case_directory = ""
@@ -260,15 +262,21 @@ def verifica_senha(tk_login, icone_custodia):
 # Interface principal do Custodia Tech
 def interface_custodia_tech():
     COLETA_PROBATORIA = "Coleta Probatória"
+    fuso_local = get_localzone()
 
     def adicionar_dados_no_relatorio(captured_screenshots, captured_screenshots_zip, videos_data, case_directory, dados_gerais,  metadados_total, file_data_youtube, file_data_x, file_data_instagram, file_data_tiktok, file_data_whatsapp, file_data_paginas):
         global nome_relatorio
         METADADOS_DO_ARQUIVO = "Metadados do Arquivo:"
         HASHES_DO_ARQUIVO = "Hashes do Arquivo:"
         
-        data_hora = datetime.now()
-        timestamp_arquivo = data_hora.strftime('%d-%m-%Y_%H-%M-%S')
-        data_hora_relatorio = data_hora.strftime('%d/%m/%Y %H:%M:%S')
+        data_hora_local = datetime.now(fuso_local)
+        #data_hora_utc = data_hora_local.astimezone(pytz.utc)
+        timestamp_arquivo = data_hora_local.strftime("%d-%m-%Y_%H-%M-%S_UTC%Z")
+        data_hora_relatorio = data_hora_local.strftime("%d/%m/%Y %H:%M:%S UTC %Z")
+        
+        # fuso_local = get_localzone()
+        # data_hora_local = datetime.now(fuso_local)
+        # timestamp = data_hora_local.strftime("%d-%m-%Y_%H-%M-%S_UTC%Z")
         
         nome_relatorio = f"Relatório de evidência(s) digital(is) {timestamp_arquivo}.pdf"
         save_path = os.path.join(case_directory, nome_relatorio)
@@ -341,7 +349,15 @@ def interface_custodia_tech():
                 alignment=TA_JUSTIFY, 
                 fontName='Times-Roman', 
                 fontSize=12, 
-                leftIndent=18
+                leftIndent=0
+            )
+            
+            chaves_style = ParagraphStyle(
+                name='GeralData', 
+                alignment=TA_JUSTIFY, 
+                fontName='Courier', 
+                fontSize=11, 
+                leftIndent=0
             )
             
             styles.add(ParagraphStyle(
@@ -420,137 +436,168 @@ def interface_custodia_tech():
             elements.append(Paragraph("<b>Dados de Captura</b>:", styles['Bold']))
 
             if captured_screenshots:
-                elements.append(
-                    Paragraph("<b>ARQUIVOS DE CAPTURA DE TELA:</b>", styles['Bold']))
+                try:
+                    elements.append(
+                        Paragraph("<b>ARQUIVOS DE CAPTURA DE TELA:</b>", styles['Bold']))
 
-                # Itera sobre ambas as listas simultaneamente, garantindo a correspondência entre a imagem e os dados.
-                for screenshot_data, screenshot_data_zip in zip(captured_screenshots, captured_screenshots_zip):
-                    image_path = screenshot_data
-                    image = RLImage(image_path, width=6.1*inch, height=4*inch)
+                    # Itera sobre ambas as listas simultaneamente, garantindo a correspondência entre a imagem e os dados.
+                    for screenshot_data, screenshot_data_zip in zip(captured_screenshots, captured_screenshots_zip):
+                        image_path = screenshot_data
+                        
+                        if image_path:
+                            # Abre a imagem com PIL para obter as dimensões originais
+                            try:
+                                pil_image = PILImage.open(image_path)
+                                original_width, original_height = pil_image.size
+                            except Exception as e:
+                                print(f"Erro ao abrir a imagem {image_path}: {e}")
+                                continue 
 
-                    if image_path:
-                        # Adiciona a imagem ao documento
-                        elements.append(image)
-                        elements.append(Spacer(1, 12))
+                            max_width_pdf = 6.1 * inch
 
-                        # Captura os dados correspondentes do zip
-                        hash_results, file_metadata, reason = screenshot_data_zip
+                            # Calcula a nova largura e altura mantendo a proporção
+                            if original_width > max_width_pdf:
+                                new_width = max_width_pdf
+                                new_height = (original_height / original_width) * new_width
+                            else:
+                                new_width = original_width
+                                new_height = original_height
+                        
+                        # Cria a imagem para o PDF com as novas dimensões
+                        image = RLImage(image_path, width=new_width, height=new_height)
 
-                        # Adiciona os dados após a imagem
-                        elements.append(
-                            Paragraph("Data e hora da extração:", styles['Bold']))
-                        elements.append(
-                            Paragraph(data_hora_relatorio, styles['Justify']))
-                        elements.append(Spacer(1, 12))
-
-                        elements.append(
-                            Paragraph("Motivo da captura:", styles['Bold']))
-                        elements.append(Paragraph(reason, styles['Justify']))
-                        elements.append(Spacer(1, 12))
-
-                        elements.append(
-                            Paragraph(METADADOS_DO_ARQUIVO, styles['Bold']))
-                        for key, value in file_metadata.items():
-                            elements.append(Paragraph(f"{key}: {value}", styles['Justify']))
+                        if image_path:
+                            # Adiciona a imagem ao documento
+                            elements.append(image)
                             elements.append(Spacer(1, 12))
 
-                        elements.append(Paragraph(HASHES_DO_ARQUIVO, styles['Bold']))
-                        for algorithm, hash_value in hash_results.items():
+                            # Captura os dados correspondentes do zip
+                            hash_results, file_metadata, reason = screenshot_data_zip
+
+                            # Adiciona os dados após a imagem
                             elements.append(
-                                Paragraph(f"{algorithm.upper()}: {hash_value}", styles['Justify']))
-                        elements.append(Spacer(1, 12))
+                                Paragraph("Data e hora da extração:", styles['Bold']))
+                            elements.append(
+                                Paragraph(data_hora_relatorio, styles['Justify']))
+                            elements.append(Spacer(1, 12))
+
+                            elements.append(
+                                Paragraph("Motivo da captura:", styles['Bold']))
+                            elements.append(Paragraph(reason, styles['Justify']))
+                            elements.append(Spacer(1, 12))
+
+                            elements.append(
+                                Paragraph(METADADOS_DO_ARQUIVO, styles['Bold']))
+                            for key, value in file_metadata.items():
+                                elements.append(Paragraph(f"{key}: {value}", styles['Justify']))
+                                elements.append(Spacer(1, 12))
+
+                            elements.append(Paragraph(HASHES_DO_ARQUIVO, styles['Bold']))
+                            for algorithm, hash_value in hash_results.items():
+                                elements.append(
+                                    Paragraph(f"{algorithm.upper()}: {hash_value}", styles['Justify']))
+                            elements.append(Spacer(1, 12))
+                except Exception as e:
+                    print(f"Erro ao adicionar os arquivos de captura de tela: {e}")
 
             if file_data_youtube:
+                try:
+                    file_data_by_url = defaultdict(list)
+                    for data in file_data_youtube:
+                        urlvideo = data['urlvideo']
+                        file_data_by_url[urlvideo].append(data)
 
-                file_data_by_url = defaultdict(list)
-                for data in file_data_youtube:
-                    urlvideo = data['urlvideo']
-                    file_data_by_url[urlvideo].append(data)
-
-                elements.append(
-                    Paragraph("<b>ARQUIVOS DO YOUTUBE:</b>", styles['Bold']))
-
-                for urlvideo, files in file_data_by_url.items():
                     elements.append(
-                        Paragraph(f"<b>URL:</b> {urlvideo}", styles['Bold']))
-                    elements.append(Spacer(1, 12))  # Espaçamento após a URL
+                        Paragraph("<b>ARQUIVOS DO YOUTUBE:</b>", styles['Bold']))
 
-                    for data in files:
+                    for urlvideo, files in file_data_by_url.items():
                         elements.append(
-                            Paragraph(f"Arquivo: {data['nome_do_arquivo']}", styles['Bold']))
-                        elements.append(Paragraph(HASHES_DO_ARQUIVO, styles['Bold']))
-                        for algorithm, hash_value in data['hashes'].items():
-                            elements.append(
-                                Paragraph(f"{algorithm.upper()}: {hash_value}", styles['Justify']))
-                        elements.append(Spacer(1, 12))
+                            Paragraph(f"<b>URL:</b> {urlvideo}", styles['Bold']))
+                        elements.append(Spacer(1, 12))  # Espaçamento após a URL
 
-                        elements.append(
-                            Paragraph("Metadados do Arquivo:", styles['Bold']))
-                        for key, value in data['metadata'].items():
+                        for data in files:
                             elements.append(
-                                Paragraph(f"{key}: {value}", styles['Justify']))
-                        elements.append(Spacer(1, 12))
+                                Paragraph(f"Arquivo: {data['nome_do_arquivo']}", styles['Bold']))
+                            elements.append(Paragraph(HASHES_DO_ARQUIVO, styles['Bold']))
+                            for algorithm, hash_value in data['hashes'].items():
+                                elements.append(
+                                    Paragraph(f"{algorithm.upper()}: {hash_value}", styles['Justify']))
+                            elements.append(Spacer(1, 12))
+
+                            elements.append(
+                                Paragraph("Metadados do Arquivo:", styles['Bold']))
+                            for key, value in data['metadata'].items():
+                                elements.append(
+                                    Paragraph(f"{key}: {value}", styles['Justify']))
+                            elements.append(Spacer(1, 12))
+                except Exception as e:
+                    print(f"Erro ao adicionar os arquivos do Youtube: {e}")
 
             if file_data_x:
-                file_data_by_url = defaultdict(list)
-                for data in file_data_x:
-                    # Use uma URL padrão se não houver URL
-                    urlvideo = data.get('urlvideo', 'URL não disponível')
-                    file_data_by_url[urlvideo].append(data)
-                elements.append(
-                    Paragraph("<b>ARQUIVOS DO X (ANTIGO TWITTER):</b>", styles['Bold']))
-
-                for urlvideo, files in file_data_by_url.items():
+                try:
+                    file_data_by_url = defaultdict(list)
+                    for data in file_data_x:
+                        # Use uma URL padrão se não houver URL
+                        urlvideo = data.get('urlvideo', 'URL não disponível')
+                        file_data_by_url[urlvideo].append(data)
                     elements.append(
-                        Paragraph(f"<b>URL:</b> {urlvideo}", styles['Bold']))
-                    elements.append(Spacer(1, 12))  # Espaçamento após a URL
+                        Paragraph("<b>ARQUIVOS DO X (ANTIGO TWITTER):</b>", styles['Bold']))
 
-                    for data in files:
+                    for urlvideo, files in file_data_by_url.items():
                         elements.append(
-                            Paragraph(f"Arquivo: {data['nome_do_arquivo']}", styles['Bold']))
-                        elements.append(Paragraph(HASHES_DO_ARQUIVO, styles['Bold']))
-                        for algorithm, hash_value in data['hashes'].items():
-                            elements.append(
-                                Paragraph(f"{algorithm.upper()}: {hash_value}", styles['Justify']))
-                        elements.append(Spacer(1, 12))
+                            Paragraph(f"<b>URL:</b> {urlvideo}", styles['Bold']))
+                        elements.append(Spacer(1, 12))  # Espaçamento após a URL
 
-                        elements.append(
-                            Paragraph(METADADOS_DO_ARQUIVO, styles['Bold']))
-                        for key, value in data['metadata'].items():
+                        for data in files:
                             elements.append(
-                                Paragraph(f"{key}: {value}", styles['Justify']))
-                        elements.append(Spacer(1, 12))
+                                Paragraph(f"Arquivo: {data['nome_do_arquivo']}", styles['Bold']))
+                            elements.append(Paragraph(HASHES_DO_ARQUIVO, styles['Bold']))
+                            for algorithm, hash_value in data['hashes'].items():
+                                elements.append(
+                                    Paragraph(f"{algorithm.upper()}: {hash_value}", styles['Justify']))
+                            elements.append(Spacer(1, 12))
+
+                            elements.append(
+                                Paragraph(METADADOS_DO_ARQUIVO, styles['Bold']))
+                            for key, value in data['metadata'].items():
+                                elements.append(
+                                    Paragraph(f"{key}: {value}", styles['Justify']))
+                            elements.append(Spacer(1, 12))
+                except Exception as e:
+                    print(f"Erro ao adicionar os arquivos do X (antigo Twitter): {e}")
 
             if file_data_tiktok:
+                try:
+                    file_data_by_url = defaultdict(list)
+                    for data in file_data_tiktok:
+                        urlvideo = data['urlvideo']
+                        file_data_by_url[urlvideo].append(data)
 
-                file_data_by_url = defaultdict(list)
-                for data in file_data_tiktok:
-                    urlvideo = data['urlvideo']
-                    file_data_by_url[urlvideo].append(data)
-
-                elements.append(
-                    Paragraph("<b>ARQUIVOS DO TIKTOK:</b>", styles['Bold']))
-
-                for urlvideo, files in file_data_by_url.items():
                     elements.append(
-                        Paragraph(f"<b>URL:</b> {urlvideo}", styles['Bold']))
-                    elements.append(Spacer(1, 12))
+                        Paragraph("<b>ARQUIVOS DO TIKTOK:</b>", styles['Bold']))
 
-                    for data in files:
+                    for urlvideo, files in file_data_by_url.items():
                         elements.append(
-                            Paragraph(f"Arquivo: {data['nome_do_arquivo']}", styles['Bold']))
-                        elements.append(Paragraph("Hashes:", styles['Bold']))
-                        for algorithm, hash_value in data['hashes'].items():
-                            elements.append(
-                                Paragraph(f"{algorithm.upper()}: {hash_value}", styles['Justify']))
+                            Paragraph(f"<b>URL:</b> {urlvideo}", styles['Bold']))
                         elements.append(Spacer(1, 12))
 
-                        elements.append(
-                            Paragraph(METADADOS_DO_ARQUIVO, styles['Bold']))
-                        for key, value in data['metadata'].items():
+                        for data in files:
                             elements.append(
-                                Paragraph(f"{key}: {value}", styles['Justify']))
-                        elements.append(Spacer(1, 12))
+                                Paragraph(f"Arquivo: {data['nome_do_arquivo']}", styles['Bold']))
+                            elements.append(Paragraph("Hashes:", styles['Bold']))
+                            for algorithm, hash_value in data['hashes'].items():
+                                elements.append(
+                                    Paragraph(f"{algorithm.upper()}: {hash_value}", styles['Justify']))
+                            elements.append(Spacer(1, 12))
+
+                            elements.append(
+                                Paragraph(METADADOS_DO_ARQUIVO, styles['Bold']))
+                            for key, value in data['metadata'].items():
+                                elements.append(
+                                    Paragraph(f"{key}: {value}", styles['Justify']))
+                            elements.append(Spacer(1, 12))
+                except Exception as e:
+                    print(f"Erro ao adicionar os arquivos do TikTok: {e}")
 
             if file_data_instagram:
 
@@ -573,109 +620,122 @@ def interface_custodia_tech():
                     elements.append(Spacer(1, 12))
 
             if videos_data:
-
-                elements.append(
-                    Paragraph("<b>ARQUIVOS DE GRAVAÇÃO DE VÍDEO:</b>", styles['Bold']))
-                elements.append(Spacer(1, 12))
-
-                for video_data in videos_data:
-                    video_path = video_data["Caminho do Arquivo"]
-                    video_file_metadata = video_data["Metadados"]
-                    video_hash_results = video_data["Hashes"]
-
-                    # Imprime o caminho do arquivo
-                    elements.append(Paragraph(f"Video: {video_path}", styles['Bold']))
-                    elements.append(Spacer(1, 6))
-
-                    # Imprime os metadados do vídeo
-                    elements.append(Paragraph("Metadados do Vídeo:", styles['Bold']))
-                    for key, value in video_file_metadata.items():
-                        elements.append(Paragraph(f"{key}: {value}", styles['Justify']))
+                try:
+                    
+                    elements.append(
+                        Paragraph("<b>ARQUIVOS DE GRAVAÇÃO DE VÍDEO:</b>", styles['Bold']))
                     elements.append(Spacer(1, 12))
 
-                    # Imprime os hashes do vídeo
-                    elements.append(Paragraph("Hashes do Vídeo:", styles['Bold']))
-                    for algorithm, hash_value in video_hash_results.items():
-                        elements.append(Paragraph(f"{algorithm.upper()}: {hash_value}", styles['Justify']))
-                    elements.append(Spacer(1, 12))
+                    for video_data in videos_data:
+                        video_path = video_data["Caminho do Arquivo"]
+                        video_file_metadata = video_data["Metadados"]
+                        video_hash_results = video_data["Hashes"]
 
-            if file_data_whatsapp:
-                # Código para imprimir em PDF...
-                elements.append(
-                    Paragraph("<b>ARQUIVOS DO WHATSAPP:</b>", styles['Bold']))
-                elements.append(Spacer(1, 12))
+                        # Imprime o caminho do arquivo
+                        elements.append(Paragraph(f"Video: {video_path}", styles['Bold']))
+                        elements.append(Spacer(1, 6))
 
-                for file_data in file_data_whatsapp:
-                    file_path = file_data["nome_do_arquivo"]
-                    file_metadata = file_data["metadata"]
-                    file_hash_results = file_data["hashes"]
-
-                    # Imprime o caminho do arquivo
-                    elements.append(Paragraph(f"Arquivo: {file_path}", styles['Bold']))
-                    elements.append(Spacer(1, 6))
-
-                    # Imprime os metadados do arquivo
-                    elements.append(Paragraph(METADADOS_DO_ARQUIVO, styles['Bold']))
-                    for key, value in file_metadata.items():
-                        elements.append(Paragraph(f"{key}: {value}", styles['Justify']))
-                    elements.append(Spacer(1, 12))
-
-                    # Imprime os hashes do arquivo
-                    elements.append(Paragraph(HASHES_DO_ARQUIVO, styles['Bold']))
-                    for algorithm, hash_value in file_hash_results.items():
-                        elements.append(Paragraph(f"{algorithm.upper()}: {hash_value}", styles['Justify']))
-                    elements.append(Spacer(1, 12))
-
-            if file_data_paginas:
-
-                elements.append(Paragraph("<b>ARQUIVOS DE PÁGINAS CAPTURADAS:</b>", styles['Bold']))
-                elements.append(Spacer(1, 12))
-
-                for file_data in file_data_paginas:
-                    file_path = file_data["nome_do_arquivo"]
-                    file_metadata = file_data["metadata"]
-                    file_hash_results = file_data["hashes"]
-
-                    # Imprime o caminho do arquivo
-                    elements.append(Paragraph(f"Arquivo: {file_path}", styles['Bold']))
-                    elements.append(Spacer(1, 6))
-
-                    # Imprime os metadados do arquivo
-                    elements.append(Paragraph(METADADOS_DO_ARQUIVO, styles['Bold']))
-                    for key, value in file_metadata.items():
-                        elements.append(Paragraph(f"{key}: {value}", styles['Justify']))
-                    elements.append(Spacer(1, 12))
-
-                    # Imprime os hashes do arquivo
-                    elements.append(Paragraph(HASHES_DO_ARQUIVO, styles['Bold']))
-                    for algorithm, hash_value in file_hash_results.items():
-                        elements.append(Paragraph(f"{algorithm.upper()}: {hash_value}", styles['Justify']))
-                    elements.append(Spacer(1, 12))
-
-            if metadados_total:
-                elements.append(Paragraph("<b>ARQUIVOS AVULSOS</b>:", styles['Bold']))
-
-                for arquivo_metadados in metadados_total:
-                    elements.append(Spacer(1, 12))
-                    # Verifique se arquivo_metadados é um dicionário
-                    if isinstance(arquivo_metadados, dict):
-                        # Acessando os dados corretamente
-                        nome_do_arquivo = arquivo_metadados.get('nome_do_arquivo', 'N/A')
-                        elements.append(Paragraph(f"<b>Arquivo: {nome_do_arquivo}</b>", styles['Bold']))
-                        
-                        # Verifique se 'metadata' e 'hashes' são dicionários e se eles existem
-                        if 'metadata' in arquivo_metadados and isinstance(arquivo_metadados['metadata'], dict):
-                            elements.append(Paragraph(METADADOS_DO_ARQUIVO, styles['Bold']))
-                            for key, value in arquivo_metadados['metadata'].items():
-                                elements.append(Paragraph(f"{key}: {value}", styles['Justify']))
-                        elements.append(Spacer(1, 12))   
-                             
-                        if 'hashes' in arquivo_metadados and isinstance(arquivo_metadados['hashes'], dict):
-                            elements.append(Paragraph(HASHES_DO_ARQUIVO, styles['Bold']))
-                            for algorithm, hash_value in arquivo_metadados['hashes'].items():
-                                elements.append(Paragraph(f"{algorithm.upper()}: {hash_value}", styles['Justify']))
+                        # Imprime os metadados do vídeo
+                        elements.append(Paragraph("Metadados do Vídeo:", styles['Bold']))
+                        for key, value in video_file_metadata.items():
+                            elements.append(Paragraph(f"{key}: {value}", styles['Justify']))
                         elements.append(Spacer(1, 12))
 
+                        # Imprime os hashes do vídeo
+                        elements.append(Paragraph("Hashes do Vídeo:", styles['Bold']))
+                        for algorithm, hash_value in video_hash_results.items():
+                            elements.append(Paragraph(f"{algorithm.upper()}: {hash_value}", styles['Justify']))
+                        elements.append(Spacer(1, 12))
+                except Exception as e:
+                    print(f"Erro ao adicionar os arquivos de vídeo: {e}")
+
+            if file_data_whatsapp:
+                try:
+                    # Código para imprimir em PDF...
+                    elements.append(
+                        Paragraph("<b>ARQUIVOS DO WHATSAPP:</b>", styles['Bold']))
+                    elements.append(Spacer(1, 12))
+
+                    for file_data in file_data_whatsapp:
+                        file_path = file_data["nome_do_arquivo"]
+                        file_metadata = file_data["metadata"]
+                        file_hash_results = file_data["hashes"]
+
+                        # Imprime o caminho do arquivo
+                        elements.append(Paragraph(f"Arquivo: {file_path}", styles['Bold']))
+                        elements.append(Spacer(1, 6))
+
+                        # Imprime os metadados do arquivo
+                        elements.append(Paragraph(METADADOS_DO_ARQUIVO, styles['Bold']))
+                        for key, value in file_metadata.items():
+                            elements.append(Paragraph(f"{key}: {value}", styles['Justify']))
+                        elements.append(Spacer(1, 12))
+
+                        # Imprime os hashes do arquivo
+                        elements.append(Paragraph(HASHES_DO_ARQUIVO, styles['Bold']))
+                        for algorithm, hash_value in file_hash_results.items():
+                            elements.append(Paragraph(f"{algorithm.upper()}: {hash_value}", styles['Justify']))
+                        elements.append(Spacer(1, 12))
+                except Exception as e:
+                    print(f"Erro ao adicionar os arquivos do WhatsApp: {e}")
+
+            if file_data_paginas:
+                try:
+                        
+                    elements.append(Paragraph("<b>ARQUIVOS DE PÁGINAS CAPTURADAS:</b>", styles['Bold']))
+                    elements.append(Spacer(1, 12))
+
+                    for file_data in file_data_paginas:
+                        file_path = file_data["nome_do_arquivo"]
+                        file_metadata = file_data["metadata"]
+                        file_hash_results = file_data["hashes"]
+
+                        # Imprime o caminho do arquivo
+                        elements.append(Paragraph(f"Arquivo: {file_path}", styles['Bold']))
+                        elements.append(Spacer(1, 6))
+
+                        # Imprime os metadados do arquivo
+                        elements.append(Paragraph(METADADOS_DO_ARQUIVO, styles['Bold']))
+                        for key, value in file_metadata.items():
+                            elements.append(Paragraph(f"{key}: {value}", styles['Justify']))
+                        elements.append(Spacer(1, 12))
+
+                        # Imprime os hashes do arquivo
+                        elements.append(Paragraph(HASHES_DO_ARQUIVO, styles['Bold']))
+                        for algorithm, hash_value in file_hash_results.items():
+                            elements.append(Paragraph(f"{algorithm.upper()}: {hash_value}", styles['Justify']))
+                        elements.append(Spacer(1, 12))
+                except Exception as e:
+                    print(f"Erro ao adicionar os arquivos de páginas capturadas: {e}")
+
+            if metadados_total:
+                try:
+                        
+                    elements.append(Paragraph("<b>ARQUIVOS AVULSOS</b>:", styles['Bold']))
+
+                    for arquivo_metadados in metadados_total:
+                        elements.append(Spacer(1, 12))
+                        # Verifique se arquivo_metadados é um dicionário
+                        if isinstance(arquivo_metadados, dict):
+                            # Acessando os dados corretamente
+                            nome_do_arquivo = arquivo_metadados.get('nome_do_arquivo', 'N/A')
+                            elements.append(Paragraph(f"<b>Arquivo: {nome_do_arquivo}</b>", styles['Bold']))
+                            
+                            # Verifique se 'metadata' e 'hashes' são dicionários e se eles existem
+                            if 'metadata' in arquivo_metadados and isinstance(arquivo_metadados['metadata'], dict):
+                                elements.append(Paragraph(METADADOS_DO_ARQUIVO, styles['Bold']))
+                                for key, value in arquivo_metadados['metadata'].items():
+                                    elements.append(Paragraph(f"{key}: {value}", styles['Justify']))
+                            elements.append(Spacer(1, 12))   
+                                
+                            if 'hashes' in arquivo_metadados and isinstance(arquivo_metadados['hashes'], dict):
+                                elements.append(Paragraph(HASHES_DO_ARQUIVO, styles['Bold']))
+                                for algorithm, hash_value in arquivo_metadados['hashes'].items():
+                                    elements.append(Paragraph(f"{algorithm.upper()}: {hash_value}", styles['Justify']))
+                            elements.append(Spacer(1, 12))
+                except Exception as e:
+                    print(f"Erro ao adicionar os arquivos avulsos: {e}")
+                    
             selected_value = combo_var.get()
 
             if selected_value == COLETA_PROBATORIA:  # Só adiciona o título se for uma coleta probatória
@@ -727,42 +787,45 @@ def interface_custodia_tech():
                     elements.append(Paragraph(f"CPF {testemunha2_cpf}", styles['Center']))
                     elements.append(Paragraph("Testemunha", styles['Center']))
 
-            # Adicionar páginas subsequentes com cabeçalho e numeração
-            def capa_relatorio(canvas, doc):
-                gerar_capa_relatorio(canvas)
+            try:
+                # Adicionar páginas subsequentes com cabeçalho e numeração
+                def capa_relatorio(canvas, doc):
+                    gerar_capa_relatorio(canvas)
 
-            def my_later_pages(canvas, doc):
-                cabecalho_relatorio(canvas, logo_path)
-                add_page_number(canvas, doc)
+                def my_later_pages(canvas, doc):
+                    cabecalho_relatorio(canvas, logo_path)
+                    add_page_number(canvas, doc)
 
-            doc.build(elements, onFirstPage=capa_relatorio,
-                      onLaterPages=my_later_pages)
+                doc.build(elements, onFirstPage=capa_relatorio,
+                        onLaterPages=my_later_pages)
 
-            chave_hash_pdf = str(os.urandom(24).hex())
-            chaves = gerar_chaves_criptograficas(chave_hash_pdf)
-            
-            emissor = EMISSOR_RELATORIO
-            hash_documento = gerar_hash_pdf(save_path)
-            chave_privada = load_pem_private_key(chaves['chave_privada'], password=chave_hash_pdf.encode())
-            assinatura = assinar_hash(hash_documento, chave_privada)
-            chave_publica = chaves['chave_publica']
+                chave_hash_pdf = str(os.urandom(24).hex())
+                chaves = gerar_chaves_criptograficas(chave_hash_pdf)
+                
+                emissor = EMISSOR_RELATORIO
+                hash_documento = gerar_hash_pdf(save_path)
+                chave_privada = load_pem_private_key(chaves['chave_privada'], password=chave_hash_pdf.encode())
+                assinatura = assinar_hash(hash_documento, chave_privada)
+                chave_publica = chaves['chave_publica']
 
-            # Dados para o QR Code
-            dados_qr = {
-                "emissor": emissor,
-                "data_hora": data_hora_relatorio,
-                "hash": hash_documento,
-                "assinatura": assinatura,
-                "chave_publica": chave_publica
-            }
+                # Dados para o QR Code
+                dados_qr = {
+                    "emissor": emissor,
+                    "data_hora": data_hora_relatorio,
+                    "hash": hash_documento,
+                    "assinatura": assinatura,
+                    "chave_publica": chave_publica
+                }
 
-            dados_qr = json.dumps(dados_qr, ensure_ascii=False, indent=0)
-            
-            qr_code_img = gerar_qr_code(dados_qr)
+                dados_qr = json.dumps(dados_qr, ensure_ascii=False, indent=0)
+                
+                qr_code_img = gerar_qr_code(dados_qr)
 
-            # Adicionar a nova página ao PDF existente
-            adicionar_pagina_ao_pdf(save_path, emissor, data_hora_relatorio, hash_documento, assinatura, chave_publica, qr_code_img, save_path, dados_gerais_style, styles, logo_path)
-
+                # Adicionar a nova página ao PDF existente
+                adicionar_pagina_ao_pdf(save_path, emissor, data_hora_relatorio, hash_documento, assinatura, chave_publica, qr_code_img, save_path, dados_gerais_style, styles, logo_path, chaves_style)
+            except Exception as e:
+                print(f"Erro ao salvar PDF: {e}")
+    
         except Exception as e:
             print(f"Erro ao salvar PDF: {e}")
 
@@ -995,7 +1058,7 @@ def interface_custodia_tech():
              # Ao finalizar a progressbar, libera os botões
             case_name_entry.config(state='normal')
             selecionar_caminho_button.config(state='normal')
-            combobox.config(state='normal')
+            combobox.config(state='readonly')
             
             progressbar['value'] = 0
             botao_fechar_caso.config(state=tk.DISABLED)
@@ -1152,9 +1215,9 @@ def interface_custodia_tech():
 
             # Limpa os dados gerais do operador e testemunhas
             numero_procedimento_entry.delete(0, tk.END)
-            operador_nome_entry.delete(0, tk.END)
-            operador_matricula_entry.delete(0, tk.END)
-            operador_orgao_entry.delete(0, tk.END)
+            # operador_nome_entry.delete(0, tk.END)
+            # operador_matricula_entry.delete(0, tk.END)
+            # operador_orgao_entry.delete(0, tk.END)
             denunciante_nome_entry.delete(0, tk.END)
             denunciante_cpf_entry.delete(0, tk.END)
             denunciante_endereco_entry.delete(0, tk.END)
@@ -1540,8 +1603,8 @@ def interface_custodia_tech():
 
             salvar_dados_json(dados_completos, case_directory)
             
-            data_hora = datetime.now()
-            timestamp_json = data_hora.strftime('%d/%m/%Y %H:%M:%S')
+            data_hora_local = datetime.now(fuso_local)
+            timestamp_json = data_hora_local.strftime("%d/%m/%Y %H:%M:%S UTC %Z")
             print(f'Tentativa de salvamento do estado da aplicação em {timestamp_json}.')
             
 

@@ -13,7 +13,7 @@ from utils.env_manager import SITE_VALIDACAO
 
 
 
-def criar_pagina_adicional(temp_pdf, emissor, data_hora_relatorio, hash_documento, assinatura, chave_publica, qr_code_img, dados_gerais_style,styles, logo_path):
+def criar_pagina_adicional(temp_pdf, emissor, data_hora_relatorio, hash_documento, assinatura, chave_publica, qr_code_img, dados_gerais_style,styles, logo_path, chaves_style):
     """
     Cria uma página adicional com o conteúdo especificado e salva em um arquivo PDF temporário.
     """
@@ -32,11 +32,21 @@ def criar_pagina_adicional(temp_pdf, emissor, data_hora_relatorio, hash_document
     elements.append(Spacer(1, 9))
     elements.append(Paragraph(f"Data/Hora da Geração do Relatório: {data_hora_relatorio}", dados_gerais_style))
     elements.append(Spacer(1, 9))
-    elements.append(Paragraph(f"Hash: {hash_documento}", dados_gerais_style))
+    elements.append(Paragraph("Hash:", dados_gerais_style))
+    elements.append(Spacer(1, 1))
+    elements.append(Paragraph(f"{hash_documento}", chaves_style))
     elements.append(Spacer(1, 9))
-    elements.append(Paragraph(f"Assinatura: {assinatura}", dados_gerais_style))
+    elements.append(Paragraph("Assinatura:", dados_gerais_style))
+    elements.append(Spacer(1, 1))
+    elements.append(Paragraph(f"{assinatura}", chaves_style))
     elements.append(Spacer(1, 9))
-    elements.append(Paragraph(f"Chave Pública: {chave_publica}", dados_gerais_style))
+    elements.append(Paragraph("Chave Pública:", dados_gerais_style))
+    elements.append(Spacer(1, 1))
+    elements.append(Paragraph("-----BEGIN PUBLIC KEY-----", chaves_style))
+    elements.append(Spacer(1, 1))
+    elements.append(Paragraph(f"{chave_publica.replace('-----BEGIN PUBLIC KEY-----', '').replace('-----END PUBLIC KEY-----', '')}", chaves_style))
+    elements.append(Spacer(1, 1))
+    elements.append(Paragraph("-----END PUBLIC KEY-----", chaves_style))
     elements.append(Spacer(1, 18))
 
     # Adicionando a imagem centralizada
@@ -55,7 +65,7 @@ def criar_pagina_adicional(temp_pdf, emissor, data_hora_relatorio, hash_document
     if os.path.exists(qr_code_img):
         os.remove(qr_code_img)
 
-def adicionar_pagina_ao_pdf(original_pdf, emissor, data_hora_relatorio, hash_documento, assinatura, chave_publica, qr_code_img, pdf_saida, dados_gerais_style, styles, logo_path):
+def adicionar_pagina_ao_pdf(original_pdf, emissor, data_hora_relatorio, hash_documento, assinatura, chave_publica, qr_code_img, pdf_saida, dados_gerais_style, styles, logo_path, chaves_style):
     """
     Adiciona uma nova página ao final de um PDF existente e salva o resultado em um novo arquivo.
     """
@@ -63,7 +73,7 @@ def adicionar_pagina_ao_pdf(original_pdf, emissor, data_hora_relatorio, hash_doc
     temp_pdf = "pagina_adicional.pdf"
 
     # Criar a nova página
-    criar_pagina_adicional(temp_pdf, emissor, data_hora_relatorio, hash_documento, assinatura, chave_publica, qr_code_img, dados_gerais_style, styles, logo_path)
+    criar_pagina_adicional(temp_pdf, emissor, data_hora_relatorio, hash_documento, assinatura, chave_publica, qr_code_img, dados_gerais_style, styles, logo_path, chaves_style)
 
     # Ler o PDF original e o PDF da nova página
     leitor_original = PdfReader(original_pdf)

@@ -35,6 +35,8 @@ def gerar_chaves_criptograficas(private_key_password):
         encoding=serialization.Encoding.PEM,
         format=serialization.PublicFormat.SubjectPublicKeyInfo
     ).decode('utf-8')
+    
+    #chave_publica_pem = chave_publica_pem.replace('\n', '')
         
     chaves = {'chave_privada': chave_privada_pem, 'chave_publica': chave_publica_pem}
     

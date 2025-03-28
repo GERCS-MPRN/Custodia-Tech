@@ -2,6 +2,9 @@ import hashlib
 import os
 from datetime import datetime
 
+from tzlocal import get_localzone
+
+
 def calculate_hash(file_path, algorithms=['md5', 'sha1', 'sha256']):
     """
     Calcula o hash de um arquivo usando algoritmos especificados.
@@ -38,13 +41,15 @@ def get_file_metadata(file_path):
     dict: Um dicionário contendo os metadados do arquivo.
           Retorna um dicionário vazio se ocorrer um erro ao obter os metadados.
     """
-    stat_info = os.stat(file_path)
     metadata = {}
+    fuso_local = get_localzone()
     try:
         file_stats = os.stat(file_path)
+        creation_time_local = datetime.fromtimestamp(file_stats.st_birthtime, tz=fuso_local)
+        
         metadata['Nome do Arquivo'] = os.path.basename(file_path)
         metadata['Tamanho (bytes)'] = file_stats.st_size
-        metadata['Data de Criação'] = datetime.fromtimestamp(stat_info.st_ctime).strftime('%d/%m/%Y %H:%M:%S')
+        metadata['Data de Criação'] = creation_time_local.strftime('%d/%m/%Y %H:%M:%S UTC%Z')
     except Exception as e:
         print(f"Erro ao obter metadados do arquivo: {e}")
     return metadata

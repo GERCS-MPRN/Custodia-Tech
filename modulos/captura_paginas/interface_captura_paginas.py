@@ -9,17 +9,26 @@ from modulos.captura_paginas.captura_paginas import iniciar_captura_de_paginas
 from utils.metadata import calculate_hash, get_file_metadata
 from utils.monitor import centraliza_janela_no_monitor_ativo
 
+
 def trata_urls(conteudo):
     links = []
-    for link in conteudo.split('\n'):
-        if link != '':
-            if not link.startswith('http:') and not link.startswith('https:'):
-                links.append('https://'+link)
+    for link in conteudo.split("\n"):
+        if link != "":
+            if not link.startswith("http:") and not link.startswith("https:"):
+                links.append("https://" + link)
             else:
                 links.append(link)
     return links
 
-def iniciar_tela_captura_paginas(tk_custodia_tech, case_directory, usuario, file_data_paginas, icone_custodia, captura_paginas_button):
+
+def iniciar_tela_captura_paginas(
+    tk_custodia_tech,
+    case_directory,
+    usuario,
+    file_data_paginas,
+    icone_custodia,
+    captura_paginas_button,
+):
     urls = []
 
     def abrir_arquivo():
@@ -40,62 +49,76 @@ def iniciar_tela_captura_paginas(tk_custodia_tech, case_directory, usuario, file
 
     def carregar_conteudo_thread(file_data_paginas):
         try:
-            captura_paginas_button.config(state='disabled')
+            captura_paginas_button.config(state="disabled")
             conteudo = texto_saida.get("1.0", tk.END).strip()
             links = trata_urls(conteudo)
             if len(links) > 20:
-                messagebox.showwarning("Aviso", "O limite de captura é de 20 (vinte) páginas por vez!")
+                messagebox.showwarning(
+                    "Aviso", "O limite de captura é de 20 (vinte) páginas por vez!"
+                )
             elif not conteudo:
-                messagebox.showwarning("Aviso", "A caixa de texto está vazia. Nada foi carregado.")
+                messagebox.showwarning(
+                    "Aviso", "A caixa de texto está vazia. Nada foi carregado."
+                )
             else:
                 tk_captura_paginas.destroy()
                 zip_files = iniciar_captura_de_paginas(case_directory, links)
 
                 for zip_file_path in zip_files:
-                    hashes = calculate_hash(zip_file_path, algorithms=['md5', 'sha1', 'sha256'])
+                    hashes = calculate_hash(
+                        zip_file_path, algorithms=["md5", "sha1", "sha256"]
+                    )
                     metadata = get_file_metadata(zip_file_path)
-                    file_data_paginas.append({
-                        'nome_do_arquivo': os.path.basename(zip_file_path),
-                        'hashes': hashes,
-                        'metadata': metadata
-                    })
+                    file_data_paginas.append(
+                        {
+                            "nome_do_arquivo": os.path.basename(zip_file_path),
+                            "hashes": hashes,
+                            "metadata": metadata,
+                        }
+                    )
                     print(f"Arquivo: {zip_file_path}")
                     print(f"Hashes: {hashes}")
                     print(f"Metadados: {metadata}")
                     print("-" * 40)
         finally:
-            captura_paginas_button.config(state='normal')
+            captura_paginas_button.config(state="normal")
 
     def ignorar_conteudo_thread(file_data_paginas):
         try:
-            captura_paginas_button.config(state='disabled')
+            captura_paginas_button.config(state="disabled")
             tk_captura_paginas.destroy()
             links = ["https://www.google.com"]
             zip_files = iniciar_captura_de_paginas(case_directory, links)
 
             for zip_file_path in zip_files:
-                hashes = calculate_hash(zip_file_path, algorithms=['md5', 'sha1', 'sha256'])
+                hashes = calculate_hash(
+                    zip_file_path, algorithms=["md5", "sha1", "sha256"]
+                )
                 metadata = get_file_metadata(zip_file_path)
-                file_data_paginas.append({
-                    'nome_do_arquivo': os.path.basename(zip_file_path),
-                    'hashes': hashes,
-                    'metadata': metadata
-                    })
+                file_data_paginas.append(
+                    {
+                        "nome_do_arquivo": os.path.basename(zip_file_path),
+                        "hashes": hashes,
+                        "metadata": metadata,
+                    }
+                )
                 print(f"Arquivo: {zip_file_path}")
                 print(f"Hashes: {hashes}")
                 print(f"Metadados: {metadata}")
                 print("-" * 40)
         finally:
-            captura_paginas_button.config(state='normal')
+            captura_paginas_button.config(state="normal")
 
     tk_captura_paginas = tk.Toplevel(tk_custodia_tech)
     tk_captura_paginas.withdraw()
     tk_captura_paginas.iconbitmap(icone_custodia)
     tk_captura_paginas.title("Captura Dinâmica de Páginas")
     tk_captura_paginas.resizable(False, False)
-    tk_captura_paginas.attributes('-fullscreen', False)
+    tk_captura_paginas.attributes("-fullscreen", False)
 
-    LARGURA_CT, ALTURA_CT = centraliza_janela_no_monitor_ativo(tk_captura_paginas, "captura_paginas")
+    LARGURA_CT, ALTURA_CT = centraliza_janela_no_monitor_ativo(
+        tk_captura_paginas, "captura_paginas"
+    )
 
     # Calcular fator de escala com base na largura original (480) da tela de captura de páginas
     LARGURA_ORIGINAL = 480  # Largura base da tela de captura de páginas
@@ -125,7 +148,7 @@ def iniciar_tela_captura_paginas(tk_custodia_tech, case_directory, usuario, file
         "   a) 'ctrl+alt+F5' (INTERROMPER ROLAGEM).",
         "   b) 'ctrl+alt+F6' (CONTINUAR ROLAGEM).",
         "6. Aguarde o término do processo de captura.",
-        "7. Ao final, clique em OK na mensagem de status exibida."
+        "7. Ao final, clique em OK na mensagem de status exibida.",
     ]
 
     # Criar Labels para cada instrução
@@ -134,13 +157,27 @@ def iniciar_tela_captura_paginas(tk_custodia_tech, case_directory, usuario, file
             tk_captura_paginas,
             text=linha,
             justify="left",
-            font=("Arial", tamanho_fonte_instrucoes)
+            font=("Arial", tamanho_fonte_instrucoes),
         )
-        label_instrucao.grid(row=i, column=0, columnspan=3, padx=int(20 * fator_escala), pady=int(1 * fator_escala), sticky="w")
+        label_instrucao.grid(
+            row=i,
+            column=0,
+            columnspan=3,
+            padx=int(20 * fator_escala),
+            pady=int(1 * fator_escala),
+            sticky="w",
+        )
 
     # Frame para o quadro de texto
     frame_texto = tk.Frame(tk_captura_paginas)
-    frame_texto.grid(row=len(instrucoes), column=0, columnspan=3, padx=int(20 * fator_escala), pady=int(10 * fator_escala), sticky="nsew")  # Ajuste aqui
+    frame_texto.grid(
+        row=len(instrucoes),
+        column=0,
+        columnspan=3,
+        padx=int(20 * fator_escala),
+        pady=int(10 * fator_escala),
+        sticky="nsew",
+    )  # Ajuste aqui
 
     # Barra de rolagem
     scrollbar = tk.Scrollbar(frame_texto)
@@ -156,14 +193,21 @@ def iniciar_tela_captura_paginas(tk_custodia_tech, case_directory, usuario, file
         bg="white",
         relief="solid",
         borderwidth=1,
-        height=altura_texto
+        height=altura_texto,
     )
     texto_saida.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
     scrollbar.config(command=texto_saida.yview)
 
     # Frame para os botões
     frame_botoes = tk.Frame(tk_captura_paginas)
-    frame_botoes.grid(row=len(instrucoes) + 1, column=0, columnspan=3, padx=int(10 * fator_escala),pady=int(10 * fator_escala), sticky="ew")  # Ajuste aqui
+    frame_botoes.grid(
+        row=len(instrucoes) + 1,
+        column=0,
+        columnspan=3,
+        padx=int(10 * fator_escala),
+        pady=int(10 * fator_escala),
+        sticky="ew",
+    )  # Ajuste aqui
 
     # Calcular largura dos botões
     LARGURA_BOTAO_BASE = 15
@@ -178,35 +222,64 @@ def iniciar_tela_captura_paginas(tk_custodia_tech, case_directory, usuario, file
         command=abrir_arquivo,
         font=("Arial", tamanho_fonte_padrao),
     )
-    botao_abrir.grid(row=0, column=0, padx=int(10 * fator_escala), ipadx=int(20 * fator_escala), ipady=int(5 * fator_escala), sticky="ew")
+    botao_abrir.grid(
+        row=0,
+        column=0,
+        padx=int(10 * fator_escala),
+        ipadx=int(20 * fator_escala),
+        ipady=int(5 * fator_escala),
+        sticky="ew",
+    )
 
     # Botões de decisão
     botao_carregar = tk.Button(
         frame_botoes,
         text="Capturar Links",
-        command=lambda: Thread(target=carregar_conteudo_thread, args=(file_data_paginas,)).start(),
+        command=lambda: Thread(
+            target=carregar_conteudo_thread, args=(file_data_paginas,)
+        ).start(),
         font=("Arial", tamanho_fonte_padrao),
         bg="#DC3545",
         fg="white",
         width=largura_botao,
     )
-    botao_carregar.grid(row=0, column=1, padx=int(10 * fator_escala), ipadx=int(10 * fator_escala), ipady=int(5 * fator_escala), sticky="ew")
+    botao_carregar.grid(
+        row=0,
+        column=1,
+        padx=int(10 * fator_escala),
+        ipadx=int(10 * fator_escala),
+        ipady=int(5 * fator_escala),
+        sticky="ew",
+    )
 
     # Botão Pular
     botao_pular = tk.Button(
         frame_botoes,
         text="Pular Etapa",
-        command=lambda: Thread(target=ignorar_conteudo_thread, args=(file_data_paginas,)).start(),
+        command=lambda: Thread(
+            target=ignorar_conteudo_thread, args=(file_data_paginas,)
+        ).start(),
         font=("Arial", tamanho_fonte_padrao),
         bg="#DC3545",
         fg="white",
-        width=largura_botao
+        width=largura_botao,
     )
-    botao_pular.grid(row=0, column=2, padx=int(10 * fator_escala), ipadx=int(10 * fator_escala), ipady=int(5 * fator_escala), sticky="ew")
+    botao_pular.grid(
+        row=0,
+        column=2,
+        padx=int(10 * fator_escala),
+        ipadx=int(10 * fator_escala),
+        ipady=int(5 * fator_escala),
+        sticky="ew",
+    )
 
     # Configurar o peso das linhas e colunas para permitir redimensionamento
-    tk_captura_paginas.grid_rowconfigure(len(instrucoes), weight=1)  # Onde frame_texto está
-    tk_captura_paginas.grid_rowconfigure(len(instrucoes) + 1, weight=0) # Onde frame_botoes está. Use 0 para manter a altura.
+    tk_captura_paginas.grid_rowconfigure(
+        len(instrucoes), weight=1
+    )  # Onde frame_texto está
+    tk_captura_paginas.grid_rowconfigure(
+        len(instrucoes) + 1, weight=0
+    )  # Onde frame_botoes está. Use 0 para manter a altura.
     tk_captura_paginas.grid_columnconfigure(0, weight=1)
 
     # Configurar pesos para as colunas dos botões

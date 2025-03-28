@@ -45,7 +45,11 @@ Para gerar o arquivo de instalação do Custodia Tech, siga os passos a seguir:
 ## Editar os dados do Relatório
 
 Para editar os dados do cabeçalho e validador basta editar os campos
+
 > CTLOGO, ORGAO, UNIDADE, NUCLEO, ENDERECO_TELEFONE, SITE_VALIDACAO , EMISSOR_RELATORIO
 
 É importante se atentar para somente editar os campos SITE_VALIDACAO e EMISSOR_RELATORIO quando tiver feito a implementação do validador próprio. Na validação é checado se o EMISSOR_RELATORIO é `CustodiaTech - MPRN`. Quando implementarem o validador, basta modificar na função `valida_relatorio()` para que o valor seja o mesmo do .env.
-# Custodia-Tech
+
+## Atualização de chaves criptográficas
+
+Disponibilizamos no arquivo `.env` uma chave padrão de criptografia e decriptografia que pode ser usado caso bem queiram. Entretanto, recomendamos usar o script `utils\secrets.py` e gerar uma nova chave única para cada MP.

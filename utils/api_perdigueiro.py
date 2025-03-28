@@ -54,7 +54,7 @@ def logar(login, senha, versao_usuario, janela_login, icone_custodia):
     global bearer_token
     
     response_data_logar = requests.post(
-        API_LOGIN_HOMOLOGACAO, 
+        API_LOGIN, 
         json={"login": login, "senha": senha}, 
         verify=False
     )
@@ -89,7 +89,7 @@ def autorizar():
     """
     global bearer_token
     header = {'Authorization': f'Bearer {bearer_token}'}
-    response_data_autorizacao = requests.get(API_AUTORIZACAO_HOMOLOGACAO, headers=header, verify=False)
+    response_data_autorizacao = requests.get(API_AUTORIZACAO, headers=header, verify=False)
     return response_data_autorizacao
 
 def gravar_log(acao_realizada, acao_completa, ip):
@@ -107,7 +107,7 @@ def gravar_log(acao_realizada, acao_completa, ip):
     global bearer_token
     header = {'Authorization': f'Bearer {bearer_token}'}
     response_data_log = requests.post(
-        API_LOG_HOMOLOGACAO, 
+        API_LOG, 
         json={
             "acaoRealizada": acao_realizada,
             "acaoCompleta": acao_completa,

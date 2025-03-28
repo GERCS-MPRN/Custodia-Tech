@@ -1,14 +1,11 @@
-import os
 import tkinter as tk
 from tkinter import ttk
-
-from PIL import Image as PILImage
-from PIL import ImageTk
 
 from utils.item_path import get_resource_path
 from utils.monitor import centraliza_janela_no_monitor_ativo
 
-def formatar_texto_markdown(texto, font_size_base):
+
+def formatar_texto_markdown(titulo_label, texto, font_size_base):
     """
     Formata o texto Markdown para ser exibido em Labels do Tkinter.
 
@@ -17,47 +14,67 @@ def formatar_texto_markdown(texto, font_size_base):
         font_size_base (int): Tamanho base da fonte para os textos.
 
     Returns:
-        list: Uma lista de dicionários, onde cada dicionário representa um 
-              parágrafo formatado com a formatação necessária (negrito, tamanho) 
+        list: Uma lista de dicionários, onde cada dicionário representa um
+              parágrafo formatado com a formatação necessária (negrito, tamanho)
               e o texto.
     """
     paragrafos = []
-    linhas = texto.split('\n')
-    
+    linhas = texto.split("\n")
+
     for linha in linhas:
-        linha = linha.strip()
-        if linha.startswith('#'):
+        # linha = linha.strip()
+        if linha.startswith("#"):
             # É um cabeçalho
-            level = linha.count('#', 0, linha.find(' ') + 1)  # Conta o número de '#' até o primeiro espaço
-            texto = linha.lstrip('#').strip()
-            font_size = int(font_size_base + 4 - level)  # Ajusta o tamanho da fonte baseado no nível do cabeçalho
-            font_weight = "bold"
+            level = linha.count(
+                "#", 0, linha.find(" ") + 1
+            )  # Conta o número de '#' até o primeiro espaço
+            if level == 1:
+                titulo_label.config(text=linha.lstrip("#").strip())
+                continue
+            else:
+                texto = linha.lstrip("#").strip()
+                font_size = int(
+                    font_size_base + 4 - level
+                )  # Ajusta o tamanho da fonte baseado no nível do cabeçalho
+                font_weight = "bold"
         else:
             # É um parágrafo normal
             texto = linha
             font_size = font_size_base
             font_weight = "normal"
-        if texto:
-            paragrafos.append({
-                'text': texto,
-                'font_size': font_size,
-                'font_weight': font_weight
-            })
+
+        paragrafos.append(
+            {"text": texto, "font_size": font_size, "font_weight": font_weight}
+        )
     return paragrafos
 
-def preencher_frame_notas(frame_notas, versao_atual, LARGURA_CT, ALTURA_CT, fator_escala, notebook, tab1):
-    
+
+def preencher_frame_notas(
+    frame_notas, versao_atual, LARGURA_CT, ALTURA_CT, fator_escala, notebook, tab1
+):
+
     print(f"largura: {LARGURA_CT}, altura: {ALTURA_CT}, fator: {fator_escala}")
-    
-    LARGURA_BARRA_ROLAGEM = int(50 * fator_escala) # Largura padrão da barra de rolagem (aproximadamente 20 pixels)
+
+    LARGURA_BARRA_ROLAGEM = int(
+        50 * fator_escala
+    )  # Largura padrão da barra de rolagem (aproximadamente 20 pixels)
 
     # Título
-    titulo_label = tk.Label(frame_notas, text=f"Notas de Versão {versao_atual}", font=("Arial", int(16 * fator_escala), "bold"))
+    titulo_label = tk.Label(
+        frame_notas,
+        text=f"Notas de Versão {versao_atual}",
+        font=("Arial", int(16 * fator_escala), "bold"),
+    )
     titulo_label.pack(pady=int(10 * fator_escala))
 
     # Frame para os parágrafos formatados
     frame_paragrafos = tk.Frame(frame_notas)
-    frame_paragrafos.pack(padx=int(20 * fator_escala), pady=int(1 * fator_escala), fill="both", expand=True)
+    frame_paragrafos.pack(
+        padx=int(20 * fator_escala),
+        pady=int(1 * fator_escala),
+        fill="both",
+        expand=True,
+    )
 
     # Barra de rolagem
     scrollbar = tk.Scrollbar(frame_paragrafos)
@@ -76,24 +93,27 @@ def preencher_frame_notas(frame_notas, versao_atual, LARGURA_CT, ALTURA_CT, fato
 
     # Carregar o conteúdo do arquivo .md
     try:
-        # versao_atual = "1.5.1" teste
         versao_doc = versao_atual.replace(".", "_")
         atualizacao_path = get_resource_path(f"docs/Atualização_{versao_doc}.md")
         with open(atualizacao_path, "r", encoding="utf-8") as f:
             conteudo_md = f.read()
 
             # Formatar o texto Markdown
-            paragrafos_formatados = formatar_texto_markdown(conteudo_md, int(10 * fator_escala))
+            paragrafos_formatados = formatar_texto_markdown(
+                titulo_label, conteudo_md, int(10 * fator_escala)
+            )
 
             # Adicionar Labels formatadas ao frame
             for paragrafo in paragrafos_formatados:
                 label = tk.Label(
                     frame_conteudo,
-                    text=paragrafo['text'],
-                    font=("Arial", paragrafo['font_size'], paragrafo['font_weight']),
-                    justify='left',
-                    wraplength=int(LARGURA_CT - 40 * fator_escala - LARGURA_BARRA_ROLAGEM),  # Ajustar largura do texto com base na largura da janela
-                    anchor="w"
+                    text=paragrafo["text"],
+                    font=("Arial", paragrafo["font_size"], paragrafo["font_weight"]),
+                    justify="left",
+                    wraplength=int(
+                        LARGURA_CT - 40 * fator_escala - LARGURA_BARRA_ROLAGEM
+                    ),  # Ajustar largura do texto com base na largura da janela
+                    anchor="w",
                 )
                 label.pack(fill="x", pady=int(1 * fator_escala))
 
@@ -105,15 +125,20 @@ def preencher_frame_notas(frame_notas, versao_atual, LARGURA_CT, ALTURA_CT, fato
         label_erro = tk.Label(
             frame_conteudo,
             text=f"Erro ao carregar o arquivo de atualização: {e}",
-            font=("Arial", int(10 * fator_escala))
+            font=("Arial", int(10 * fator_escala)),
         )
         label_erro.pack()
 
     # Configurar a função para lidar com o redimensionamento da região de rolagem
-    frame_conteudo.bind("<Configure>", lambda e: canvas_paragrafos.config(scrollregion=canvas_paragrafos.bbox("all")))
-    
+    frame_conteudo.bind(
+        "<Configure>",
+        lambda e: canvas_paragrafos.config(scrollregion=canvas_paragrafos.bbox("all")),
+    )
+
     def _on_mousewheel(event):
-        """Lida com o evento de rolagem do mouse."""
+        # Se o usuário tentar rolar para cima e já estiver no topo, não faz nada.
+        if event.delta > 0 and canvas_paragrafos.yview()[0] <= 0:
+            return "break"
         canvas_paragrafos.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
     def _bound_to_mousewheel(event):
@@ -132,15 +157,25 @@ def preencher_frame_notas(frame_notas, versao_atual, LARGURA_CT, ALTURA_CT, fato
     frame_conteudo.bind("<Leave>", _unbound_to_mousewheel)
 
     # Para sistemas baseados em Unix (Linux, macOS)
-    canvas_paragrafos.bind("<Button-4>", lambda e: canvas_paragrafos.yview_scroll(-1, "units"))
-    canvas_paragrafos.bind("<Button-5>", lambda e: canvas_paragrafos.yview_scroll(1, "units"))
-    
-    frame_conteudo.bind("<Button-4>", lambda e: canvas_paragrafos.yview_scroll(-1, "units"))
-    frame_conteudo.bind("<Button-5>", lambda e: canvas_paragrafos.yview_scroll(1, "units"))
-    
+    canvas_paragrafos.bind(
+        "<Button-4>", lambda e: canvas_paragrafos.yview_scroll(-1, "units")
+    )
+    canvas_paragrafos.bind(
+        "<Button-5>", lambda e: canvas_paragrafos.yview_scroll(1, "units")
+    )
+
+    frame_conteudo.bind(
+        "<Button-4>", lambda e: canvas_paragrafos.yview_scroll(-1, "units")
+    )
+    frame_conteudo.bind(
+        "<Button-5>", lambda e: canvas_paragrafos.yview_scroll(1, "units")
+    )
+
     # Botão Voltar
     def voltar_para_captura():
         notebook.select(tab1)
 
-    voltar_button = ttk.Button(frame_conteudo, text="Voltar", command=voltar_para_captura)
-    voltar_button.pack(pady=10)
+    voltar_button = ttk.Button(
+        frame_conteudo, text="Voltar", command=voltar_para_captura
+    )
+    voltar_button.pack(pady=10, ipadx=10, ipady=5)

@@ -1,14 +1,15 @@
 import os
-from pathlib import Path
 import shutil
 import time
 import zipfile
+from pathlib import Path
 
 from utils.metadata import calculate_hash, get_file_metadata
+from utils.renomear_zip import renomear_zip
 
 
 def monitor_downloads_folder(case_directory, videos_data):
-    
+
     downloads_folder = str(Path.home() / "Downloads")
     print(f"Monitorando a pasta de Downloads: {downloads_folder}")
 
@@ -29,19 +30,29 @@ def monitor_downloads_folder(case_directory, videos_data):
                             print(f"Arquivo movido: {file_name}")
 
                             # Create a zip file
-                            zip_file_path = os.path.join(case_directory, f"{file_name}.zip")
-                            with zipfile.ZipFile(zip_file_path, 'w') as zip_file:
+                            zip_file_path = os.path.join(
+                                case_directory, f"{file_name}.zip"
+                            )
+                            with zipfile.ZipFile(zip_file_path, "w") as zip_file:
                                 zip_file.write(dest_path, file_name)
                             print(f"Arquivo compactado em {zip_file_path}")
                             # Obter metadados
+                            hashes = calculate_hash(
+                                zip_file_path, ["md5", "sha1", "sha256"]
+                            )
                             metadata = get_file_metadata(zip_file_path)
-                            hashes = calculate_hash(zip_file_path, ["md5", "sha1", "sha256"])
-                            
-                            videos_data.append({
-                                "Caminho do Arquivo": zip_file_path,
-                                "Metadados": metadata,
-                                "Hashes": hashes
-                            })
+
+                            metadata, nome_final_zip = renomear_zip(
+                                zip_file_path, metadata, "CustodiaTech_Gravação_"
+                            )
+
+                            videos_data.append(
+                                {
+                                    "Caminho do Arquivo": nome_final_zip,
+                                    "Metadados": metadata,
+                                    "Hashes": hashes,
+                                }
+                            )
 
                             os.remove(dest_path)
                             print(f"Arquivo original removido: {file_name}")
